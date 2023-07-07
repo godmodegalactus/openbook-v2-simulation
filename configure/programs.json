@@ -1,0 +1,20 @@
+[
+  {
+    "name": "pyth_mock",
+    "programPath": "configure/programs/pyth_mock.so",
+    "programKeyPath": "configure/programs/pyth_mock.json",
+    "idl": ""
+  },
+  {
+    "name": "openbook_v2",
+    "programPath": "configure/programs/openbook_v2.so",
+    "programKeyPath": "configure/programs/openbook_v2-keypair.json",
+    "idl": ""
+  },
+  {
+    "name": "noop",
+    "programPath": "configure/programs/spl_noop.so",
+    "programKeyPath": "configure/programs/spl_noop.json",
+    "idl": ""
+  }
+]
