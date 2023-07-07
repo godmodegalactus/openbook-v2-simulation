@@ -2871,6 +2871,7 @@ dependencies = [
  "anchor-client",
  "anchor-lang",
  "anchor-spl",
+ "bincode",
  "openbook-v2",
  "pyth-sdk-solana",
  "solana-account-decoder",
@@ -2882,6 +2883,7 @@ dependencies = [
  "solana-sdk",
  "spl-token-2022 0.6.0",
  "tokio",
+ "yellowstone-grpc-proto",
 ]
 
 [[package]]
@@ -6707,6 +6709,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e17bb3549cc1321ae1296b9cdc2698e2b6cb1992adfa19a8c72e5b7a738f44cd"
 dependencies = [
  "time 0.3.22",
+]
+
+[[package]]
+name = "yellowstone-grpc-proto"
+version = "1.1.0+solana.1.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c2688c6f1d930f21f580829f6f896d7d38f90d5b2272e53a8f69a82e72b656f"
+dependencies = [
+ "anyhow",
+ "prost",
+ "protobuf-src",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
