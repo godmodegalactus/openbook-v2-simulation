@@ -75,7 +75,7 @@ export class OpenbookConfigurator {
         );
 
         await this.program.methods
-          .initOpenOrders(0, 64)
+          .initOpenOrders(0)
           .accounts({
             openOrdersAccount: openOrders,
             market: market.market_pk,
@@ -100,12 +100,13 @@ export class OpenbookConfigurator {
   public async fillOrderBook(
     user: User,
     userKp: Keypair,
-    market: Market,
+    marketData: Market,
     nbOrders: number
   ) {
     for (let i = 0; i < nbOrders; ++i) {
       let side = { bid: {} };
       let placeOrder = { limit: {} };
+      let selfTradeBehavior = {decrementTake: {}};
 
       await this.program.methods
         .placeOrder(
@@ -115,21 +116,20 @@ export class OpenbookConfigurator {
           new BN(1000000),
           new BN(i),
           placeOrder,
-          false,
+          selfTradeBehavior,
           U64_MAX_BN,
           255
         )
         .accounts({
-          asks: market.asks,
-          baseVault: market.base_vault,
-          bids: market.bids,
-          eventQueue: market.event_queue,
-          market: market.market_pk,
-          openOrdersAccount: user.open_orders[market.market_index].open_orders,
-          oracle: market.oracle,
-          owner: userKp.publicKey,
-          payer: user.token_data[0].token_account,
-          quoteVault: market.quote_vault,
+          asks: marketData.asks,
+          marketVault: marketData.base_vault,
+          bids: marketData.bids,
+          eventQueue: marketData.event_queue,
+          market: marketData.market_pk,
+          openOrdersAccount: user.open_orders[marketData.market_index].open_orders,
+          oracle: marketData.oracle,
+          ownerOrDelegate: userKp.publicKey,
+          tokenDepositAccount: user.token_data[0].token_account,
           systemProgram: web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
@@ -140,6 +140,7 @@ export class OpenbookConfigurator {
     for (let i = 0; i < nbOrders; ++i) {
       let side = { ask: {} };
       let placeOrder = { limit: {} };
+      let selfTradeBehavior = {decrementTake: {}};
 
       await this.program.methods
         .placeOrder(
@@ -149,21 +150,20 @@ export class OpenbookConfigurator {
           new BN(1000000),
           new BN(i + nbOrders + 1),
           placeOrder,
-          false,
+          selfTradeBehavior,
           U64_MAX_BN,
           255
         )
         .accounts({
-          asks: market.asks,
-          baseVault: market.base_vault,
-          bids: market.bids,
-          eventQueue: market.event_queue,
-          market: market.market_pk,
-          openOrdersAccount: user.open_orders[market.market_index].open_orders,
-          oracle: market.oracle,
-          owner: userKp.publicKey,
-          payer: user.token_data[market.market_index + 1].token_account,
-          quoteVault: market.quote_vault,
+          asks: marketData.asks,
+          marketVault: marketData.base_vault,
+          bids: marketData.bids,
+          eventQueue: marketData.event_queue,
+          market: marketData.market_pk,
+          openOrdersAccount: user.open_orders[marketData.market_index].open_orders,
+          oracle: marketData.oracle,
+          ownerOrDelegate: userKp.publicKey,
+          tokenDepositAccount: user.token_data[0].token_account,
           systemProgram: web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })

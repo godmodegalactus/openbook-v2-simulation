@@ -3,7 +3,7 @@ import IDL from "../programs/openbook_v2.json";
 import { Program, web3, BN } from "@project-serum/anchor";
 import { createAccount } from "../general/solana_utils";
 import { MintUtils } from "../general/mint_utils";
-import { I80F48, I80F48Dto } from "@blockworks-foundation/mango-v4";
+import { I80F48, I80F48Dto, U64_MAX_BN } from "@blockworks-foundation/mango-v4";
 import { OpenbookV2 } from "./openbook_v2";
 import { TestProvider } from "../anchor_utils";
 
@@ -39,7 +39,7 @@ export async function createMarket(
   const admin: PublicKey = adminKp.publicKey;
 
   await program.methods
-    .stubOracleCreate({ val: I80F48.fromNumber(1.0).getData() })
+    .stubOracleCreate({val: new BN(1)})
     .accounts({
       oracle: oracleId,
       admin,
@@ -72,7 +72,7 @@ export async function createMarket(
   let marketIndex: BN = new BN(index);
 
   let [marketPk, _tmp2] = PublicKey.findProgramAddressSync(
-    [Buffer.from("Market"), admin.toBuffer(), marketIndex.toBuffer("le", 4)],
+    [Buffer.from("Market"), marketIndex.toBuffer("le", 4)],
     openbookProgramId
   );
 
@@ -98,12 +98,12 @@ export async function createMarket(
       },
       new BN(1),
       new BN(1),
-      0,
-      0,
-      0
+      new BN(0),
+      new BN(0),
+      new BN(0),
+      new BN(0),
     )
     .accounts({
-      admin,
       market: marketPk,
       bids,
       asks,
@@ -115,8 +115,14 @@ export async function createMarket(
       quoteMint,
       systemProgram: web3.SystemProgram.programId,
       oracle: oracleId,
+      collectFeeAdmin: admin,
+      openOrdersAdmin: null,
+      closeMarketAdmin: null,
+      consumeEventsAdmin: null,
     })
-    .signers([adminKp])
+    .preInstructions([web3.ComputeBudgetProgram.setComputeUnitLimit({
+      units: 10_000_000
+    })])
     .rpc();
 
   return {
