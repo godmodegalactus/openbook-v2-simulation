@@ -1,27 +1,26 @@
 {
-    "name": "openbook-v2-simulation",
-    "version": "1.0.0",
-    "main": "index.js",
-    "repository": "https://github.com/godmodegalactus/openbook-v2-simulation.git",
-    "license": "MIT",
-    "scripts": {
-      "configure": "ts-node configure/main.ts"
-    },
-    "devDependencies": {
-      "@types/node": "^20.1.0",
-      "jest": "^29.5.0",
-      "ts-jest": "^29.1.0",
-      "ts-node": "^10.9.1",
-      "typescript": "^5.0.4"
-    },
-    "dependencies": {
-      "@blockworks-foundation/mango-v4": "^0.14.2",
-      "@project-serum/anchor": "^0.26.0",
-      "@solana/spl-token": "^0.3.7",
-      "@solana/web3.js": "^1.75.0",
-      "cmd-ts": "^0.12.1",
-      "loadash": "^1.0.0",
-      "lodash": "^4.17.21"
-    }
+  "name": "openbook-v2-simulation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/godmodegalactus/openbook-v2-simulation.git",
+  "license": "MIT",
+  "scripts": {
+    "configure": "ts-node configure/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.1.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@blockworks-foundation/mango-v4": "^0.14.2",
+    "@project-serum/anchor": "^0.26.0",
+    "@solana/spl-token": "^0.3.7",
+    "@solana/web3.js": "^1.75.0",
+    "cmd-ts": "^0.12.1",
+    "loadash": "^1.0.0",
+    "lodash": "^4.17.21"
   }
-  
+}

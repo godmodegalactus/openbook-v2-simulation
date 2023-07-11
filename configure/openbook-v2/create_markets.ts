@@ -1,4 +1,4 @@
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction } from "@solana/web3.js";
 import IDL from "../programs/openbook_v2.json";
 import { Program, web3, BN } from "@project-serum/anchor";
 import { createAccount } from "../general/solana_utils";
@@ -36,19 +36,19 @@ export async function createMarket(
     [Buffer.from("StubOracle"), baseMint.toBytes()],
     openbookProgramId
   );
-  const admin: PublicKey = adminKp.publicKey;
 
-  await program.methods
+  let sig = await anchorProvider.connection.requestAirdrop(adminKp.publicKey, 1000 * LAMPORTS_PER_SOL);
+  await anchorProvider.connection.confirmTransaction(sig);
+
+  let tx = await program.methods
     .stubOracleCreate({val: new BN(1)})
     .accounts({
+      admin : adminKp.publicKey,
+      payer: adminKp.publicKey,
       oracle: oracleId,
-      admin,
       mint: baseMint,
-      payer: anchorProvider.wallet.publicKey,
       systemProgram: web3.SystemProgram.programId,
-    })
-    .signers([adminKp])
-    .rpc();
+    }).signers([adminKp]).rpc();
 
   // bookside size = 123720
   let asks = await createAccount(
@@ -66,7 +66,7 @@ export async function createMarket(
   let eventQueue = await createAccount(
     anchorProvider.connection,
     anchorProvider.keypair,
-    97688,
+    101592,
     openbookProgramId
   );
   let marketIndex: BN = new BN(index);
@@ -108,14 +108,14 @@ export async function createMarket(
       bids,
       asks,
       eventQueue,
-      payer: anchorProvider.publicKey,
+      payer: anchorProvider.keypair.publicKey,
       baseVault,
       quoteVault,
       baseMint,
       quoteMint,
       systemProgram: web3.SystemProgram.programId,
       oracle: oracleId,
-      collectFeeAdmin: admin,
+      collectFeeAdmin: adminKp.publicKey,
       openOrdersAdmin: null,
       closeMarketAdmin: null,
       consumeEventsAdmin: null,
@@ -123,6 +123,7 @@ export async function createMarket(
     .preInstructions([web3.ComputeBudgetProgram.setComputeUnitLimit({
       units: 10_000_000
     })])
+    .signers([])
     .rpc();
 
   return {

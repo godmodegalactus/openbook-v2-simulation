@@ -80,7 +80,8 @@ export class OpenbookConfigurator {
             openOrdersAccount: openOrders,
             market: market.market_pk,
             owner: user.publicKey,
-            payer: this.anchorProvider.publicKey,
+            delegateAccount: null,
+            payer: this.anchorProvider.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
           })
           .signers([user])
@@ -122,7 +123,8 @@ export class OpenbookConfigurator {
         )
         .accounts({
           asks: marketData.asks,
-          marketVault: marketData.base_vault,
+          baseVault: marketData.base_vault,
+          quoteVault: marketData.quote_vault,
           bids: marketData.bids,
           eventQueue: marketData.event_queue,
           market: marketData.market_pk,
@@ -132,6 +134,7 @@ export class OpenbookConfigurator {
           tokenDepositAccount: user.token_data[0].token_account,
           systemProgram: web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
+          openOrdersAdmin: undefined,
         })
         .signers([userKp])
         .rpc();
@@ -156,16 +159,18 @@ export class OpenbookConfigurator {
         )
         .accounts({
           asks: marketData.asks,
-          marketVault: marketData.base_vault,
+          baseVault: marketData.base_vault,
+          quoteVault: marketData.quote_vault,
           bids: marketData.bids,
           eventQueue: marketData.event_queue,
           market: marketData.market_pk,
           openOrdersAccount: user.open_orders[marketData.market_index].open_orders,
           oracle: marketData.oracle,
           ownerOrDelegate: userKp.publicKey,
-          tokenDepositAccount: user.token_data[0].token_account,
+          tokenDepositAccount: user.token_data.filter(x => x.mint === marketData.base_mint).at(0)?.token_account,
           systemProgram: web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
+          openOrdersAdmin: undefined,
         })
         .signers([userKp])
         .rpc();

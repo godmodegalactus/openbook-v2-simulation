@@ -16,6 +16,10 @@ import { OutputFile } from "./output_file";
 import { MintUtils } from "./general/mint_utils";
 import { OpenbookConfigurator } from "./openbook-v2/configure_openbook";
 
+function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
 const numberOfAccountsToBeCreated = option({
     type: number,
     defaultValue: () => 100,
@@ -176,6 +180,8 @@ async function configure(
     let mintUtils = new MintUtils(connection, authority);
     let mints = await mintUtils.createMints(nbMints);
     console.log("Mints created");
+    
+    await delay(2000)
 
     console.log("Configuring openbook-v2");
     let index = programs.findIndex((x) => x.name === "openbook_v2");

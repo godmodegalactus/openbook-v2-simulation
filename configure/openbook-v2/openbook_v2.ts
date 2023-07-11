@@ -9,6 +9,11 @@ export type OpenbookV2 = {
       ],
       "accounts": [
         {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "market",
           "isMut": true,
           "isSigner": false
@@ -31,11 +36,6 @@ export type OpenbookV2 = {
           "name": "eventQueue",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "baseVault",
@@ -196,11 +196,6 @@ export type OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "ownerOrDelegate",
           "isMut": false,
           "isSigner": true
@@ -210,6 +205,11 @@ export type OpenbookV2 = {
           "isMut": false,
           "isSigner": true,
           "isOptional": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "tokenDepositAccount",
@@ -237,7 +237,12 @@ export type OpenbookV2 = {
           "isSigner": false
         },
         {
-          "name": "marketVault",
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "quoteVault",
           "isMut": true,
           "isSigner": false
         },
@@ -309,11 +314,6 @@ export type OpenbookV2 = {
       "name": "placeOrderPegged",
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "ownerOrDelegate",
           "isMut": false,
           "isSigner": true
@@ -323,6 +323,11 @@ export type OpenbookV2 = {
           "isMut": false,
           "isSigner": true,
           "isOptional": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "tokenDepositAccount",
@@ -350,7 +355,12 @@ export type OpenbookV2 = {
           "isSigner": false
         },
         {
-          "name": "marketVault",
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "quoteVault",
           "isMut": true,
           "isSigner": false
         },
@@ -441,6 +451,12 @@ export type OpenbookV2 = {
           "isSigner": true
         },
         {
+          "name": "openOrdersAdmin",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true
+        },
+        {
           "name": "market",
           "isMut": true,
           "isSigner": false
@@ -494,12 +510,6 @@ export type OpenbookV2 = {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "openOrdersAdmin",
-          "isMut": false,
-          "isSigner": true,
-          "isOptional": true
         }
       ],
       "args": [
@@ -640,14 +650,14 @@ export type OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "market",
@@ -682,14 +692,14 @@ export type OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "market",
@@ -721,14 +731,14 @@ export type OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "market",
@@ -764,8 +774,8 @@ export type OpenbookV2 = {
     {
       "name": "deposit",
       "docs": [
-        "Desposit a certain amount of `base_amount_lots` and `quote_amount_lots`",
-        "into one's [`Position`](crate::state::Position).",
+        "Desposit a certain amount of `base` and `quote` lamports into one's",
+        "[`Position`](crate::state::Position).",
         "",
         "Makers might wish to `deposit`, rather than have actual tokens moved for",
         "each trade, in order to reduce CUs."
@@ -819,11 +829,11 @@ export type OpenbookV2 = {
       ],
       "args": [
         {
-          "name": "baseAmountLots",
+          "name": "baseAmount",
           "type": "u64"
         },
         {
-          "name": "quoteAmountLots",
+          "name": "quoteAmount",
           "type": "u64"
         }
       ]
@@ -1051,14 +1061,14 @@ export type OpenbookV2 = {
           "isSigner": true
         },
         {
-          "name": "oracle",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "admin",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "oracle",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "mint",
@@ -2595,7 +2605,12 @@ export type OpenbookV2 = {
           "index": false
         },
         {
-          "name": "quantity",
+          "name": "baseAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteAmount",
           "type": "u64",
           "index": false
         }
@@ -2755,166 +2770,171 @@ export type OpenbookV2 = {
     },
     {
       "code": 6001,
+      "name": "InvalidInputNameLength",
+      "msg": "Name lenght above limit"
+    },
+    {
+      "code": 6002,
       "name": "InvalidInputMarketExpired",
       "msg": "Market cannot be created as expired"
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "InvalidInputMarketFees",
       "msg": "Taker fees should be positive and if maker fees are negative, greater or equal to their abs value"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "InvalidInputLots",
       "msg": "Lots cannot be negative"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "InvalidInputLotsSize",
       "msg": "Lots size above market limits"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidInputPriceLots",
       "msg": "Price lots should be greater than zero"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "InvalidInputPegLimit",
       "msg": "Peg limit should be greater than zero"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidInputOrderType",
       "msg": "The order type is invalid. A taker order must be Market or ImmediateOrCancel"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "InvalidInputOrderId",
       "msg": "Order id cannot be zero"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "InvalidInputStaleness",
       "msg": "Oracle staleness limit is currently unimplemented"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "InvalidInputQueueSlots",
       "msg": "Slot above queue limit"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "HeaderVersionNotKnown",
       "msg": "The header version is not 1"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "UnknownOracleType",
       "msg": "oracle type cannot be determined"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "OracleConfidence",
       "msg": "an oracle does not reach the confidence threshold"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "OracleStale",
       "msg": "an oracle is stale"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "OrderIdNotFound",
       "msg": "Order id not found on the orderbook"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "EventQueueContainsElements",
       "msg": "Event queue contains elements and market can't be closed"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "InvalidOrderPostIOC",
       "msg": "ImmediateOrCancel is not a PostOrderType"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "InvalidOrderPostMarket",
       "msg": "Market is not a PostOrderType"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "WouldSelfTrade",
       "msg": "would self trade"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "NoCloseMarketAdmin",
       "msg": "This market does not have a `close_market_admin` and thus cannot be closed."
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidCloseMarketAdmin",
       "msg": "The signer of this transaction is not this market's `close_market_admin`."
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "MissingOpenOrdersAdmin",
       "msg": "This market requires `open_orders_admin` to sign all instructions that create orders."
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "InvalidOpenOrdersAdmin",
       "msg": "The `open_orders_admin` passed does not match this market's `open_orders_admin`."
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "MissingConsumeEventsAdmin",
       "msg": "This market requires `consume_events_admin` to sign all instructions that consume events."
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "InvalidConsumeEventsAdmin",
       "msg": "The `consume_events_admin` passed does not match this market's `consume_events_admin`."
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "MarketHasExpired",
       "msg": "The Market has already expired."
     },
     {
-      "code": 6027,
+      "code": 6028,
       "name": "InvalidPriceLots",
       "msg": "Price lots should be greater than zero"
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "InvalidOraclePrice",
       "msg": "Oracle price above market limits"
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "MarketHasNotExpired",
       "msg": "The Market has not expired yet."
     },
     {
-      "code": 6030,
+      "code": 6031,
       "name": "NoOwnerOrDelegate",
       "msg": "No correct owner or delegate."
     },
     {
-      "code": 6031,
+      "code": 6032,
       "name": "OpenOrdersFull",
       "msg": "No free order index in open orders account"
     },
     {
-      "code": 6032,
+      "code": 6033,
       "name": "BookContainsElements",
       "msg": "Book contains elements"
     },
     {
-      "code": 6033,
+      "code": 6034,
       "name": "OpenOrdersOrderNotFound",
       "msg": "Could not find order in user account"
     }
@@ -2932,6 +2952,11 @@ export const IDL: OpenbookV2 = {
       ],
       "accounts": [
         {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "market",
           "isMut": true,
           "isSigner": false
@@ -2954,11 +2979,6 @@ export const IDL: OpenbookV2 = {
           "name": "eventQueue",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "baseVault",
@@ -3119,11 +3139,6 @@ export const IDL: OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "ownerOrDelegate",
           "isMut": false,
           "isSigner": true
@@ -3133,6 +3148,11 @@ export const IDL: OpenbookV2 = {
           "isMut": false,
           "isSigner": true,
           "isOptional": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "tokenDepositAccount",
@@ -3160,7 +3180,12 @@ export const IDL: OpenbookV2 = {
           "isSigner": false
         },
         {
-          "name": "marketVault",
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "quoteVault",
           "isMut": true,
           "isSigner": false
         },
@@ -3232,11 +3257,6 @@ export const IDL: OpenbookV2 = {
       "name": "placeOrderPegged",
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "ownerOrDelegate",
           "isMut": false,
           "isSigner": true
@@ -3246,6 +3266,11 @@ export const IDL: OpenbookV2 = {
           "isMut": false,
           "isSigner": true,
           "isOptional": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "tokenDepositAccount",
@@ -3273,7 +3298,12 @@ export const IDL: OpenbookV2 = {
           "isSigner": false
         },
         {
-          "name": "marketVault",
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "quoteVault",
           "isMut": true,
           "isSigner": false
         },
@@ -3364,6 +3394,12 @@ export const IDL: OpenbookV2 = {
           "isSigner": true
         },
         {
+          "name": "openOrdersAdmin",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true
+        },
+        {
           "name": "market",
           "isMut": true,
           "isSigner": false
@@ -3417,12 +3453,6 @@ export const IDL: OpenbookV2 = {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "openOrdersAdmin",
-          "isMut": false,
-          "isSigner": true,
-          "isOptional": true
         }
       ],
       "args": [
@@ -3563,14 +3593,14 @@ export const IDL: OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "market",
@@ -3605,14 +3635,14 @@ export const IDL: OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "market",
@@ -3644,14 +3674,14 @@ export const IDL: OpenbookV2 = {
       ],
       "accounts": [
         {
-          "name": "openOrdersAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "openOrdersAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "market",
@@ -3687,8 +3717,8 @@ export const IDL: OpenbookV2 = {
     {
       "name": "deposit",
       "docs": [
-        "Desposit a certain amount of `base_amount_lots` and `quote_amount_lots`",
-        "into one's [`Position`](crate::state::Position).",
+        "Desposit a certain amount of `base` and `quote` lamports into one's",
+        "[`Position`](crate::state::Position).",
         "",
         "Makers might wish to `deposit`, rather than have actual tokens moved for",
         "each trade, in order to reduce CUs."
@@ -3742,11 +3772,11 @@ export const IDL: OpenbookV2 = {
       ],
       "args": [
         {
-          "name": "baseAmountLots",
+          "name": "baseAmount",
           "type": "u64"
         },
         {
-          "name": "quoteAmountLots",
+          "name": "quoteAmount",
           "type": "u64"
         }
       ]
@@ -3974,14 +4004,14 @@ export const IDL: OpenbookV2 = {
           "isSigner": true
         },
         {
-          "name": "oracle",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "admin",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "oracle",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "mint",
@@ -5518,7 +5548,12 @@ export const IDL: OpenbookV2 = {
           "index": false
         },
         {
-          "name": "quantity",
+          "name": "baseAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteAmount",
           "type": "u64",
           "index": false
         }
@@ -5678,166 +5713,171 @@ export const IDL: OpenbookV2 = {
     },
     {
       "code": 6001,
+      "name": "InvalidInputNameLength",
+      "msg": "Name lenght above limit"
+    },
+    {
+      "code": 6002,
       "name": "InvalidInputMarketExpired",
       "msg": "Market cannot be created as expired"
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "InvalidInputMarketFees",
       "msg": "Taker fees should be positive and if maker fees are negative, greater or equal to their abs value"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "InvalidInputLots",
       "msg": "Lots cannot be negative"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "InvalidInputLotsSize",
       "msg": "Lots size above market limits"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidInputPriceLots",
       "msg": "Price lots should be greater than zero"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "InvalidInputPegLimit",
       "msg": "Peg limit should be greater than zero"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidInputOrderType",
       "msg": "The order type is invalid. A taker order must be Market or ImmediateOrCancel"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "InvalidInputOrderId",
       "msg": "Order id cannot be zero"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "InvalidInputStaleness",
       "msg": "Oracle staleness limit is currently unimplemented"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "InvalidInputQueueSlots",
       "msg": "Slot above queue limit"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "HeaderVersionNotKnown",
       "msg": "The header version is not 1"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "UnknownOracleType",
       "msg": "oracle type cannot be determined"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "OracleConfidence",
       "msg": "an oracle does not reach the confidence threshold"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "OracleStale",
       "msg": "an oracle is stale"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "OrderIdNotFound",
       "msg": "Order id not found on the orderbook"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "EventQueueContainsElements",
       "msg": "Event queue contains elements and market can't be closed"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "InvalidOrderPostIOC",
       "msg": "ImmediateOrCancel is not a PostOrderType"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "InvalidOrderPostMarket",
       "msg": "Market is not a PostOrderType"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "WouldSelfTrade",
       "msg": "would self trade"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "NoCloseMarketAdmin",
       "msg": "This market does not have a `close_market_admin` and thus cannot be closed."
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidCloseMarketAdmin",
       "msg": "The signer of this transaction is not this market's `close_market_admin`."
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "MissingOpenOrdersAdmin",
       "msg": "This market requires `open_orders_admin` to sign all instructions that create orders."
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "InvalidOpenOrdersAdmin",
       "msg": "The `open_orders_admin` passed does not match this market's `open_orders_admin`."
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "MissingConsumeEventsAdmin",
       "msg": "This market requires `consume_events_admin` to sign all instructions that consume events."
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "InvalidConsumeEventsAdmin",
       "msg": "The `consume_events_admin` passed does not match this market's `consume_events_admin`."
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "MarketHasExpired",
       "msg": "The Market has already expired."
     },
     {
-      "code": 6027,
+      "code": 6028,
       "name": "InvalidPriceLots",
       "msg": "Price lots should be greater than zero"
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "InvalidOraclePrice",
       "msg": "Oracle price above market limits"
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "MarketHasNotExpired",
       "msg": "The Market has not expired yet."
     },
     {
-      "code": 6030,
+      "code": 6031,
       "name": "NoOwnerOrDelegate",
       "msg": "No correct owner or delegate."
     },
     {
-      "code": 6031,
+      "code": 6032,
       "name": "OpenOrdersFull",
       "msg": "No free order index in open orders account"
     },
     {
-      "code": 6032,
+      "code": 6033,
       "name": "BookContainsElements",
       "msg": "Book contains elements"
     },
     {
-      "code": 6033,
+      "code": 6034,
       "name": "OpenOrdersOrderNotFound",
       "msg": "Could not find order in user account"
     }

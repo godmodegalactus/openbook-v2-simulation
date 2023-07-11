@@ -32,7 +32,7 @@ export class MintUtils {
   public async createMints(nbMints: number): Promise<PublicKey[]> {
     return await Promise.all(
       Array.from(Array(nbMints).keys()).map((_) => {
-        return this.createMint();
+         return this.createMint();
       })
     );
   }
