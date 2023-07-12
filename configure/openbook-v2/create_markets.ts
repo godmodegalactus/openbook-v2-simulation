@@ -20,7 +20,13 @@ export interface Market {
   base_mint: PublicKey;
   quote_mint: PublicKey;
   market_index: number;
+  price: number,
 }
+
+function getRandomInt(max:  number) {
+  return Math.floor(Math.random() * max) + 100;
+}
+
 
 export async function createMarket(
   program: Program<OpenbookV2>,
@@ -37,10 +43,12 @@ export async function createMarket(
     openbookProgramId
   );
 
+  let price = getRandomInt(1000);
+
   let sig = await anchorProvider.connection.requestAirdrop(adminKp.publicKey, 1000 * LAMPORTS_PER_SOL);
   await anchorProvider.connection.confirmTransaction(sig);
 
-  let tx = await program.methods
+  await program.methods
     .stubOracleCreate({val: new BN(1)})
     .accounts({
       admin : adminKp.publicKey,
@@ -49,6 +57,15 @@ export async function createMarket(
       mint: baseMint,
       systemProgram: web3.SystemProgram.programId,
     }).signers([adminKp]).rpc();
+
+  await program.methods.stubOracleSet({
+    val: price,
+  }).accounts(
+    {
+      admin: adminKp.publicKey,
+      oracle: oracleId,
+    }
+  ).signers([adminKp]).rpc();
 
   // bookside size = 123720
   let asks = await createAccount(
@@ -139,5 +156,6 @@ export async function createMarket(
     oracle: oracleId,
     quote_mint: quoteMint,
     quote_vault: quoteVault,
+    price,
   };
 }

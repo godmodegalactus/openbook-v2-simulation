@@ -2,17 +2,9 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{signature::Keypair, signer::Signer};
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct Command {
-    pub name: String,
-    pub instruction: Vec<u8>,
-    pub argument_sizes: Vec<u8>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
 pub struct ProgramData {
     pub name: String,
     pub program_id: String,
-    pub commands: Vec<Command>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -73,6 +65,7 @@ pub struct Market {
     pub base_mint: String,
     pub quote_mint: String,
     pub market_index: usize,
+    pub price: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -1,13 +1,19 @@
+use std::rc::Rc;
+
 use anyhow::{Context, bail};
 use cli::Args;
 use clap::Parser;
-use config::Config;
+use json_config::Config;
+use anchor_client::{Client, Program, Cluster};
+use solana_program::pubkey::Pubkey;
+use solana_sdk::signature::Keypair;
 
 mod cli;
 mod market_maker;
-mod config;
+mod json_config;
+mod openbook_config;
 
-#[tokio::main()]
+#[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     
@@ -23,6 +29,8 @@ async fn main() -> anyhow::Result<()> {
         log::error!("Config file is missing markets");
         bail!("No markets")
     }
+
+    
 
     Ok(())
 }
