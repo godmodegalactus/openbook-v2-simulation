@@ -1,8 +1,12 @@
-use std::{sync::{Arc, atomic::AtomicU64}, time::Duration};
+use std::{
+    sync::{atomic::AtomicU64, Arc},
+    time::Duration,
+};
 
 use crate::{
     cli::Args,
-    openbook_config::{Obv2Config, Obv2Market, Obv2User}, states::TransactionSendRecord,
+    openbook_config::{Obv2Config, Obv2Market, Obv2User},
+    states::TransactionSendRecord,
 };
 use anchor_lang::{InstructionData, ToAccountMetas};
 use chrono::Utc;

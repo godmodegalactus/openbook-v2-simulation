@@ -1,3 +1,4 @@
+use crate::states::TransactionSendRecord;
 use bincode::serialize;
 use log::{error, info, warn};
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -13,7 +14,6 @@ use std::{
     },
 };
 use tokio::sync::{mpsc::UnboundedSender, RwLock};
-use crate::states::TransactionSendRecord;
 
 pub type QuicTpuClient = TpuClient;
 
@@ -40,7 +40,8 @@ impl TpuManager {
         let mut connection_cache = ConnectionCache::default();
 
         connection_cache
-            .update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))).expect("Error setting up connection cache");
+            .update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))
+            .expect("Error setting up connection cache");
 
         let tpu_client = Arc::new(
             TpuClient::new_with_connection_cache(
@@ -67,7 +68,9 @@ impl TpuManager {
     pub async fn reset_tpu_client(&self) -> anyhow::Result<()> {
         let identity = Keypair::from_bytes(&self.identity.to_bytes()).unwrap();
         let mut connection_cache = ConnectionCache::default();
-        connection_cache.update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))).expect("Error setting connection cache");
+        connection_cache
+            .update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))
+            .expect("Error setting connection cache");
 
         let tpu_client = Arc::new(
             TpuClient::new_with_connection_cache(
@@ -156,13 +159,15 @@ impl TpuManager {
                     .map(|(tx, _)| serialize(tx).expect("serialization should succeed"))
                     .collect(),
             )
-            .await.is_ok() {
-                if let Err(e) = self.reset().await {
-                    error!("error while reseting tpu client {}", e);
-                }
-                false
-            } else {
-                true
+            .await
+            .is_ok()
+        {
+            if let Err(e) = self.reset().await {
+                error!("error while reseting tpu client {}", e);
             }
+            false
+        } else {
+            true
+        }
     }
 }

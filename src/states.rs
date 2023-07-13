@@ -1,7 +1,7 @@
-use serde::Serialize;
-use solana_program::{slot_history::Slot, pubkey::Pubkey};
-use solana_sdk::signature::Signature;
 use chrono::{DateTime, Utc};
+use serde::Serialize;
+use solana_program::{pubkey::Pubkey, slot_history::Slot};
+use solana_sdk::signature::Signature;
 
 #[derive(Clone, Serialize)]
 pub struct TransactionSendRecord {
@@ -32,7 +32,6 @@ pub struct TransactionConfirmRecord {
     pub timed_out: bool,
     pub priority_fees: u64,
 }
-
 
 #[derive(Clone, Serialize)]
 pub struct BlockData {

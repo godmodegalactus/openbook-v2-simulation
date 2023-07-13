@@ -1,9 +1,4 @@
-use std::{
-    sync::{
-        Arc,
-    },
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use chrono::Utc;
 use dashmap::DashMap;
@@ -70,7 +65,7 @@ pub async fn process_blocks(
                             cu_consumed = cu_consumed.saturating_add(x);
                             x
                         }
-                        _ => {0}
+                        _ => 0,
                     }
                 } else {
                     0
@@ -191,8 +186,7 @@ pub fn confirmations_by_blocks(
                             break;
                         }
                     },
-                    Err(_) => {
-                    }
+                    Err(_) => {}
                 }
             }
         })

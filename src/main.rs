@@ -2,23 +2,26 @@ use anyhow::{bail, Context};
 use clap::Parser;
 use cli::Args;
 use confirmation_strategy::confirmations_by_blocks;
-use helpers::{start_blockhash_polling_service, create_transaction_bridge};
+use helpers::{create_transaction_bridge, start_blockhash_polling_service};
 use json_config::Config;
 use market_maker::start_market_makers;
 use openbook_config::Obv2Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair};
-use std::{sync::{atomic::AtomicU64, Arc}, time::Duration};
-use tokio::sync::{RwLock, mpsc::unbounded_channel};
+use std::{
+    sync::{atomic::AtomicU64, Arc},
+    time::Duration,
+};
+use tokio::sync::{mpsc::unbounded_channel, RwLock};
 
 mod cli;
+mod confirmation_strategy;
 mod helpers;
 mod json_config;
 mod market_maker;
 mod openbook_config;
-mod tpu_manager;
 mod states;
-mod confirmation_strategy;
+mod tpu_manager;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
@@ -40,9 +43,10 @@ async fn main() -> anyhow::Result<()> {
 
     let identity = if !args.identity.is_empty() {
         let identity_file = tokio::fs::read_to_string(args.identity.as_str())
-                .await
+            .await
             .expect("Cannot find the identity file provided");
-        let identity_bytes: Vec<u8> = serde_json::from_str(&identity_file).expect("Keypair file invalid");
+        let identity_bytes: Vec<u8> =
+            serde_json::from_str(&identity_file).expect("Keypair file invalid");
         Keypair::from_bytes(identity_bytes.as_slice()).expect("Keypair file invalid")
     } else {
         Keypair::new()
@@ -70,33 +74,62 @@ async fn main() -> anyhow::Result<()> {
     let last_slot = rpc_client.get_slot().await.expect("Rpc URL is not working");
     let blockhash_rw = Arc::new(RwLock::new(recent_blockhash));
     let current_slot = Arc::new(AtomicU64::new(last_slot));
-    let bh_polling_task =
-        start_blockhash_polling_service(blockhash_rw.clone(), current_slot.clone(), rpc_client.clone());
+    let bh_polling_task = start_blockhash_polling_service(
+        blockhash_rw.clone(),
+        current_slot.clone(),
+        rpc_client.clone(),
+    );
 
     // start tpu manager
     let (tx_send_record_sx, tx_send_record_rx) = unbounded_channel();
-    let tpu_manager = Arc::new(tpu_manager::TpuManager::new(rpc_client.clone(), args.ws_url.clone(), 16, identity, tx_send_record_sx).await);
+    let tpu_manager = Arc::new(
+        tpu_manager::TpuManager::new(
+            rpc_client.clone(),
+            args.ws_url.clone(),
+            16,
+            identity,
+            tx_send_record_sx,
+        )
+        .await,
+    );
     tpu_manager.force_reset_after_every(Duration::from_secs(600)); // reset every 10 minutes
 
     // start confirmations by blocks
     let (tx_confirmation_sx, tx_confirmation_rx) = tokio::sync::broadcast::channel(8192);
     let (blocks_confirmation_sx, blocks_confirmation_rx) = tokio::sync::broadcast::channel(8192);
-    let mut other_services = confirmations_by_blocks(rpc_client.clone(), tx_send_record_rx, tx_confirmation_sx, blocks_confirmation_sx, current_slot.load(std::sync::atomic::Ordering::Relaxed));
+    let mut other_services = confirmations_by_blocks(
+        rpc_client.clone(),
+        tx_send_record_rx,
+        tx_confirmation_sx,
+        blocks_confirmation_sx,
+        current_slot.load(std::sync::atomic::Ordering::Relaxed),
+    );
 
     other_services.push(bh_polling_task);
     // start transaction send bridge
-    let transaction_send_bridge_task = create_transaction_bridge(tx_rx, tpu_manager, 16, Duration::from_millis(5));
+    let transaction_send_bridge_task =
+        create_transaction_bridge(tx_rx, tpu_manager, 16, Duration::from_millis(5));
     other_services.push(transaction_send_bridge_task);
 
     // start market making
-    let market_makers_task =
-        start_market_makers(&args, &obv2_config, &program_id, tx_sx, blockhash_rw, current_slot.clone());
-    
+    let market_makers_task = start_market_makers(
+        &args,
+        &obv2_config,
+        &program_id,
+        tx_sx,
+        blockhash_rw,
+        current_slot.clone(),
+    );
 
-    match tokio::time::timeout(Duration::from_secs(args.duration_in_seconds), futures::future::select_all(market_makers_task)).await {
+    match tokio::time::timeout(
+        Duration::from_secs(args.duration_in_seconds),
+        futures::future::select_all(market_makers_task),
+    )
+    .await
+    {
         Err(_) => {
             // market making tasks should timeout anyways it is normal behavior
-        },
+        }
         Ok(_) => {
             log::error!("user unexpectedly exited sending transactions");
         }
