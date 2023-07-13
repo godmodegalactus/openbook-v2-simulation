@@ -3023,6 +3023,7 @@ dependencies = [
  "openbook-v2",
  "pyth-sdk-solana",
  "rand 0.8.5",
+ "regex",
  "serde",
  "serde_json",
  "solana-account-decoder",

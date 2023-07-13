@@ -1,4 +1,5 @@
 use crate::states::TransactionSendRecord;
+use crate::stats::OpenbookV2SimulationStats;
 use bincode::serialize;
 use log::{error, info, warn};
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -27,6 +28,7 @@ pub struct TpuManager {
     fanout_slots: u64,
     identity: Arc<Keypair>,
     tx_send_record: UnboundedSender<TransactionSendRecord>,
+    stats: OpenbookV2SimulationStats,
 }
 
 impl TpuManager {
@@ -36,6 +38,7 @@ impl TpuManager {
         fanout_slots: u64,
         identity: Keypair,
         tx_send_record: UnboundedSender<TransactionSendRecord>,
+        stats: OpenbookV2SimulationStats,
     ) -> Self {
         let mut connection_cache = ConnectionCache::default();
 
@@ -62,6 +65,7 @@ impl TpuManager {
             error_count: Default::default(),
             identity: Arc::new(identity),
             tx_send_record,
+            stats,
         }
     }
 
@@ -150,6 +154,10 @@ impl TpuManager {
                     sent.err().unwrap().to_string()
                 );
             }
+        }
+
+        for (_, record) in batch {
+            self.stats.inc_send(record.is_consume_event);
         }
 
         if !tpu_client

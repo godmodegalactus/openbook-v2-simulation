@@ -8,6 +8,7 @@ use market_maker::start_market_makers;
 use openbook_config::Obv2Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair};
+use stats::OpenbookV2SimulationStats;
 use std::{
     sync::{atomic::AtomicU64, Arc},
     time::Duration,
@@ -22,6 +23,7 @@ mod market_maker;
 mod openbook_config;
 mod states;
 mod tpu_manager;
+mod stats;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
@@ -66,6 +68,12 @@ async fn main() -> anyhow::Result<()> {
         CommitmentConfig::finalized(),
     ));
 
+    let openbook_simulation_stats = OpenbookV2SimulationStats::new(
+        config.users.len(),
+        args.quotes_per_seconds as usize,
+        args.duration_in_seconds as usize,
+    );
+
     // create a task that updates blockhash after every interval
     let recent_blockhash = rpc_client
         .get_latest_blockhash()
@@ -89,6 +97,7 @@ async fn main() -> anyhow::Result<()> {
             16,
             identity,
             tx_send_record_sx,
+            openbook_simulation_stats.clone(),
         )
         .await,
     );
@@ -104,6 +113,7 @@ async fn main() -> anyhow::Result<()> {
         blocks_confirmation_sx,
         current_slot.load(std::sync::atomic::Ordering::Relaxed),
     );
+    openbook_simulation_stats.update_from_tx_status_stream(tx_confirmation_rx);
 
     other_services.push(bh_polling_task);
     // start transaction send bridge
@@ -120,6 +130,16 @@ async fn main() -> anyhow::Result<()> {
         blockhash_rw,
         current_slot.clone(),
     );
+
+    // task which updates stats
+    let mut openbook_simulation_stats = openbook_simulation_stats.clone();
+    let reporting_thread = tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(60)).await;
+            openbook_simulation_stats.report(false, "openbook v2 simulation").await;
+        }
+    });
+    other_services.push(reporting_thread);
 
     match tokio::time::timeout(
         Duration::from_secs(args.duration_in_seconds),
