@@ -16,7 +16,6 @@ use tokio::sync::{mpsc::UnboundedSender, RwLock};
 use crate::states::TransactionSendRecord;
 
 pub type QuicTpuClient = TpuClient;
-pub type QuicConnectionCache = ConnectionCache;
 
 #[derive(Clone)]
 pub struct TpuManager {
@@ -112,26 +111,26 @@ impl TpuManager {
         self.tpu_client.read().await.clone()
     }
 
-    pub async fn send_transaction(
-        &self,
-        transaction: &solana_sdk::transaction::Transaction,
-        transaction_sent_record: TransactionSendRecord,
-    ) -> bool {
-        let tpu_client = self.get_tpu_client().await;
-        let tx_sent_record = self.tx_send_record.clone();
-        let sent = tx_sent_record.send(transaction_sent_record);
-        if sent.is_err() {
-            warn!(
-                "sending error on channel : {}",
-                sent.err().unwrap().to_string()
-            );
-            if let Err(e) = self.reset().await {
-                error!("error while reseting tpu client {}", e);
-            }
-        }
+    // pub async fn send_transaction(
+    //     &self,
+    //     transaction: &solana_sdk::transaction::Transaction,
+    //     transaction_sent_record: TransactionSendRecord,
+    // ) -> bool {
+    //     let tpu_client = self.get_tpu_client().await;
+    //     let tx_sent_record = self.tx_send_record.clone();
+    //     let sent = tx_sent_record.send(transaction_sent_record);
+    //     if sent.is_err() {
+    //         warn!(
+    //             "sending error on channel : {}",
+    //             sent.err().unwrap().to_string()
+    //         );
+    //         if let Err(e) = self.reset().await {
+    //             error!("error while reseting tpu client {}", e);
+    //         }
+    //     }
 
-        tpu_client.send_transaction(transaction).await
-    }
+    //     tpu_client.send_transaction(transaction).await
+    // }
 
     pub async fn send_transaction_batch(
         &self,
@@ -150,14 +149,20 @@ impl TpuManager {
             }
         }
 
-        tpu_client
+        if !tpu_client
             .try_send_wire_transaction_batch(
                 batch
                     .iter()
                     .map(|(tx, _)| serialize(tx).expect("serialization should succeed"))
                     .collect(),
             )
-            .await
-            .is_ok()
+            .await.is_ok() {
+                if let Err(e) = self.reset().await {
+                    error!("error while reseting tpu client {}", e);
+                }
+                false
+            } else {
+                true
+            }
     }
 }

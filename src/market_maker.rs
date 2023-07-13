@@ -1,10 +1,11 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::{Arc, atomic::AtomicU64}, time::Duration};
 
 use crate::{
     cli::Args,
-    openbook_config::{Obv2Config, Obv2Market, Obv2User},
+    openbook_config::{Obv2Config, Obv2Market, Obv2User}, states::TransactionSendRecord,
 };
 use anchor_lang::{InstructionData, ToAccountMetas};
+use chrono::Utc;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use solana_sdk::hash::Hash;
 use solana_sdk::{
@@ -130,8 +131,9 @@ async fn start_market_making(
     user: Obv2User,
     market: Obv2Market,
     program_id: Pubkey,
-    transaction_send_channel: UnboundedSender<Transaction>,
+    transaction_send_channel: UnboundedSender<(Transaction, TransactionSendRecord)>,
     block_hash_rw: Arc<RwLock<Hash>>,
+    current_slot: Arc<AtomicU64>,
     quotes_per_second: u64,
     seed: u64,
 ) {
@@ -155,7 +157,19 @@ async fn start_market_making(
             let message = Message::new(&instructions, Some(&user.secret.pubkey()));
             let tx = Transaction::new(&[user.secret.as_ref()], message, recent_blockhash);
             let signature = tx.signatures[0];
-            match transaction_send_channel.send(tx) {
+
+            let record = TransactionSendRecord {
+                is_consume_event: false,
+                market: Some(market.market_pk),
+                priority_fees: 0,
+                signature: signature.clone(),
+                user: Some(user.pubkey()),
+                sent_slot: current_slot.load(std::sync::atomic::Ordering::Relaxed),
+                sent_at: Utc::now(),
+            };
+
+            let signature = tx.signatures[0];
+            match transaction_send_channel.send((tx, record)) {
                 Ok(_) => {
                     log::trace!("successfully sent {} on channel", signature);
                 }
@@ -178,8 +192,9 @@ pub fn start_market_makers(
     args: &Args,
     config: &Obv2Config,
     program_id: &Pubkey,
-    transaction_send_channel: UnboundedSender<Transaction>,
+    transaction_send_channel: UnboundedSender<(Transaction, TransactionSendRecord)>,
     block_hash_rw: Arc<RwLock<Hash>>,
+    current_slot: Arc<AtomicU64>,
 ) -> Vec<JoinHandle<()>> {
     let mut tasks = vec![];
     let mut seed = 0;
@@ -191,6 +206,7 @@ pub fn start_market_makers(
             let transaction_send_channel = transaction_send_channel.clone();
             let block_hash_rw = block_hash_rw.clone();
             let program_id = program_id.clone();
+            let current_slot = current_slot.clone();
             let task = tokio::spawn(async move {
                 start_market_making(
                     user,
@@ -198,6 +214,7 @@ pub fn start_market_makers(
                     program_id,
                     transaction_send_channel,
                     block_hash_rw,
+                    current_slot,
                     quotes_per_second,
                     seed,
                 )

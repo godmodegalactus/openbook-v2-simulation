@@ -32,3 +32,16 @@ pub struct TransactionConfirmRecord {
     pub timed_out: bool,
     pub priority_fees: u64,
 }
+
+
+#[derive(Clone, Serialize)]
+pub struct BlockData {
+    pub block_hash: String,
+    pub block_slot: Slot,
+    pub block_leader: String,
+    pub total_transactions: u64,
+    pub number_of_mm_transactions: u64,
+    pub block_time: u64,
+    pub cu_consumed: u64,
+    pub percentage_filled_by_openbook: f32,
+}

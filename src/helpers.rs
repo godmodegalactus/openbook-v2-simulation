@@ -12,7 +12,7 @@ use solana_program::hash::Hash;
 use solana_sdk::transaction::Transaction;
 use tokio::{sync::{RwLock, mpsc::UnboundedReceiver}, task::JoinHandle, time::Instant};
 
-use crate::tpu_manager::TpuManager;
+use crate::{tpu_manager::TpuManager, states::TransactionSendRecord};
 
 pub async fn get_new_latest_blockhash(client: Arc<RpcClient>, blockhash: &Hash) -> Option<Hash> {
     let start = Instant::now();
@@ -76,7 +76,7 @@ pub fn start_blockhash_polling_service(
     })
 }
 
-pub fn create_transaction_bridge(tx_rx : UnboundedReceiver<Transaction>, tpu_manager: Arc<TpuManager>, max_batch_size: usize, recv_timeout: Duration) -> JoinHandle<()> {
+pub fn create_transaction_bridge(tx_rx : UnboundedReceiver<(Transaction, TransactionSendRecord)>, tpu_manager: Arc<TpuManager>, max_batch_size: usize, recv_timeout: Duration) -> JoinHandle<()> {
     tokio::spawn(async move {
 
         let mut transactions = vec![];
@@ -103,9 +103,11 @@ pub fn create_transaction_bridge(tx_rx : UnboundedReceiver<Transaction>, tpu_man
             }
 
             // create async task that sends tranasctions over TPU
+            let transactions: Vec<(Transaction, TransactionSendRecord)> = transactions.drain(..).collect();
+            let tpu_manager = tpu_manager.clone();
             tokio::spawn(async move {
-                
-            })
+                tpu_manager.send_transaction_batch(&transactions).await;
+            });
         }
     })
 }

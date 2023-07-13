@@ -1238,6 +1238,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "5.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6943ae99c34386c84a470c499d3414f66502a41340aa895406e0d2e4a207b91d"
+dependencies = [
+ "cfg-if 1.0.0",
+ "hashbrown 0.14.0",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.8",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3003,6 +3016,8 @@ dependencies = [
  "bincode",
  "chrono",
  "clap 4.3.11",
+ "dashmap 5.5.0",
+ "futures 0.3.28",
  "itertools 0.11.0",
  "log",
  "openbook-v2",
@@ -3017,6 +3032,7 @@ dependencies = [
  "solana-program-test",
  "solana-rpc",
  "solana-sdk",
+ "solana-transaction-status",
  "spl-token-2022 0.6.0",
  "tokio",
  "yellowstone-grpc-proto",
@@ -4730,7 +4746,7 @@ dependencies = [
  "chrono",
  "chrono-humanize",
  "crossbeam-channel",
- "dashmap",
+ "dashmap 4.0.2",
  "fs_extra",
  "futures 0.3.28",
  "itertools 0.10.5",
@@ -5031,7 +5047,7 @@ dependencies = [
  "bincode",
  "bs58 0.4.0",
  "crossbeam-channel",
- "dashmap",
+ "dashmap 4.0.2",
  "itertools 0.10.5",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -5088,7 +5104,7 @@ dependencies = [
  "byteorder",
  "bzip2",
  "crossbeam-channel",
- "dashmap",
+ "dashmap 4.0.2",
  "dir-diff",
  "flate2",
  "fnv",
