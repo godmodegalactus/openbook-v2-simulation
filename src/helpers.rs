@@ -9,7 +9,10 @@ use std::{
 use log::{debug, info};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::hash::Hash;
-use tokio::{sync::RwLock, task::JoinHandle, time::Instant};
+use solana_sdk::transaction::Transaction;
+use tokio::{sync::{RwLock, mpsc::UnboundedReceiver}, task::JoinHandle, time::Instant};
+
+use crate::tpu_manager::TpuManager;
 
 pub async fn get_new_latest_blockhash(client: Arc<RpcClient>, blockhash: &Hash) -> Option<Hash> {
     let start = Instant::now();
@@ -70,5 +73,39 @@ pub fn start_blockhash_polling_service(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         poll_blockhash_and_slot(blockhash.clone(), current_slot.as_ref(), client).await;
+    })
+}
+
+pub fn create_transaction_bridge(tx_rx : UnboundedReceiver<Transaction>, tpu_manager: Arc<TpuManager>, max_batch_size: usize, recv_timeout: Duration) -> JoinHandle<()> {
+    tokio::spawn(async move {
+
+        let mut transactions = vec![];
+        transactions.reserve(max_batch_size);
+        let mut tx_rx = tx_rx;
+        loop {
+            if transactions.len() < max_batch_size {
+                match tokio::time::timeout(recv_timeout, tx_rx.recv()).await {
+                    Ok(Some(tx)) => {
+                        transactions.push(tx);
+                        continue;
+                    },
+                    Ok(None) => {
+                        // channel broken
+                        break;
+                    },
+                    Err(_) => {
+                        // timed out continue to send pending transactions
+                    }
+                }
+            }
+            if transactions.is_empty() {
+                continue;
+            }
+
+            // create async task that sends tranasctions over TPU
+            tokio::spawn(async move {
+                
+            })
+        }
     })
 }

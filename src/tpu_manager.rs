@@ -13,6 +13,7 @@ use std::{
     },
 };
 use tokio::sync::{mpsc::UnboundedSender, RwLock};
+use crate::states::TransactionSendRecord;
 
 pub type QuicTpuClient = TpuClient;
 pub type QuicConnectionCache = ConnectionCache;
@@ -26,7 +27,6 @@ pub struct TpuManager {
     pub ws_addr: String,
     fanout_slots: u64,
     identity: Arc<Keypair>,
-    stats: MangoSimulationStats,
     tx_send_record: UnboundedSender<TransactionSendRecord>,
 }
 
@@ -36,20 +36,19 @@ impl TpuManager {
         ws_addr: String,
         fanout_slots: u64,
         identity: Keypair,
-        stats: MangoSimulationStats,
         tx_send_record: UnboundedSender<TransactionSendRecord>,
     ) -> Self {
         let mut connection_cache = ConnectionCache::default();
 
         connection_cache
-            .update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)));
+            .update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))).expect("Error setting up connection cache");
 
         let tpu_client = Arc::new(
             TpuClient::new_with_connection_cache(
                 rpc_client.clone(),
                 &ws_addr,
                 solana_client::tpu_client::TpuClientConfig { fanout_slots },
-                connection_cache,
+                Arc::new(connection_cache),
             )
             .await
             .unwrap(),
@@ -62,25 +61,14 @@ impl TpuManager {
             fanout_slots,
             error_count: Default::default(),
             identity: Arc::new(identity),
-            stats,
             tx_send_record,
         }
     }
 
     pub async fn reset_tpu_client(&self) -> anyhow::Result<()> {
         let identity = Keypair::from_bytes(&self.identity.to_bytes()).unwrap();
-        let connection_cache = ConnectionCache::new_with_client_options(
-            4,
-            None,
-            Some((&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))),
-            None,
-        );
-        let quic_connection_cache =
-            if let ConnectionCache::Quic(connection_cache) = connection_cache {
-                Some(connection_cache)
-            } else {
-                None
-            };
+        let mut connection_cache = ConnectionCache::default();
+        connection_cache.update_client_certificate(&identity, IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))).expect("Error setting connection cache");
 
         let tpu_client = Arc::new(
             TpuClient::new_with_connection_cache(
@@ -89,7 +77,7 @@ impl TpuManager {
                 solana_client::tpu_client::TpuClientConfig {
                     fanout_slots: self.fanout_slots,
                 },
-                quic_connection_cache.unwrap(),
+                Arc::new(connection_cache),
             )
             .await
             .unwrap(),
@@ -130,9 +118,6 @@ impl TpuManager {
         transaction_sent_record: TransactionSendRecord,
     ) -> bool {
         let tpu_client = self.get_tpu_client().await;
-        self.stats
-            .inc_send(&transaction_sent_record.keeper_instruction);
-
         let tx_sent_record = self.tx_send_record.clone();
         let sent = tx_sent_record.send(transaction_sent_record);
         if sent.is_err() {
@@ -155,8 +140,6 @@ impl TpuManager {
         let tpu_client = self.get_tpu_client().await;
 
         for (_tx, record) in batch {
-            self.stats.inc_send(&record.keeper_instruction);
-
             let tx_sent_record = self.tx_send_record.clone();
             let sent = tx_sent_record.send(record.clone());
             if sent.is_err() {

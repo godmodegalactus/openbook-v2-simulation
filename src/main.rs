@@ -16,6 +16,7 @@ mod json_config;
 mod market_maker;
 mod openbook_config;
 mod tpu_manager;
+mod states;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
