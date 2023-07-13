@@ -1,17 +1,39 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::{cli::Args, openbook_config::{Obv2User, Obv2Market, Obv2Config}};
-use anchor_lang::{ToAccountMetas, InstructionData};
-use rand::{rngs::StdRng, SeedableRng, Rng};
-use solana_sdk::{signer::Signer, signers::Signers, signature::Keypair, transaction::Transaction, pubkey::Pubkey, instruction::Instruction, message::Message};
-use tokio::{sync::{mpsc::UnboundedSender, RwLock}, task::JoinHandle, time::Instant};
+use crate::{
+    cli::Args,
+    openbook_config::{Obv2Config, Obv2Market, Obv2User},
+};
+use anchor_lang::{InstructionData, ToAccountMetas};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use solana_sdk::hash::Hash;
+use solana_sdk::{
+    instruction::Instruction, message::Message, pubkey::Pubkey, signer::Signer,
+    transaction::Transaction,
+};
+use tokio::{
+    sync::{mpsc::UnboundedSender, RwLock},
+    task::JoinHandle,
+    time::Instant,
+};
 
-fn create_market_making_instructions(user: &Obv2User, market: &Obv2Market, program_id: Pubkey, client_id: u64, offset: i64, size: i64,) -> Vec<Instruction> {
-    let open_orders_account = user.open_orders.iter().find(|x| x.market == market.market_pk).map(|x| x.open_orders.clone()).expect("should exists");
+fn create_market_making_instructions(
+    user: &Obv2User,
+    market: &Obv2Market,
+    program_id: Pubkey,
+    client_id: u64,
+    offset: i64,
+    size: i64,
+) -> Vec<Instruction> {
+    let open_orders_account = user
+        .open_orders
+        .iter()
+        .find(|x| x.market == market.market_pk)
+        .map(|x| x.open_orders.clone())
+        .expect("should exists");
 
     // cancel all previous orders
-    let cancel_order_instruction =  {
+    let cancel_order_instruction = {
         let accounts = openbook_v2::accounts::CancelAllOrders {
             asks: market.asks,
             bids: market.bids,
@@ -24,7 +46,11 @@ fn create_market_making_instructions(user: &Obv2User, market: &Obv2Market, progr
             limit: 255,
             side_option: None,
         };
-        Instruction::new_with_bytes(program_id, instruction_data.data().as_slice(), accounts_meta)
+        Instruction::new_with_bytes(
+            program_id,
+            instruction_data.data().as_slice(),
+            accounts_meta,
+        )
     };
 
     // place bid order
@@ -55,7 +81,11 @@ fn create_market_making_instructions(user: &Obv2User, market: &Obv2Market, progr
             side: openbook_v2::state::Side::Bid,
             self_trade_behavior: openbook_v2::state::SelfTradeBehavior::DecrementTake,
         };
-        Instruction::new_with_bytes(program_id, instruction_data.data().as_slice(), accounts.to_account_metas(None))
+        Instruction::new_with_bytes(
+            program_id,
+            instruction_data.data().as_slice(),
+            accounts.to_account_metas(None),
+        )
     };
 
     // place ask order
@@ -86,21 +116,40 @@ fn create_market_making_instructions(user: &Obv2User, market: &Obv2Market, progr
             side: openbook_v2::state::Side::Ask,
             self_trade_behavior: openbook_v2::state::SelfTradeBehavior::DecrementTake,
         };
-        Instruction::new_with_bytes(program_id, instruction_data.data().as_slice(), accounts.to_account_metas(None))
+        Instruction::new_with_bytes(
+            program_id,
+            instruction_data.data().as_slice(),
+            accounts.to_account_metas(None),
+        )
     };
 
     vec![cancel_order_instruction, place_bid_order, place_ask_order]
 }
 
-async fn start_market_making(user: Obv2User, market: Obv2Market, program_id: Pubkey, transaction_send_channel: UnboundedSender<Transaction>, block_hash_rw: Arc<RwLock<Hash>>, quotes_per_second: u64, seed: u64) {
-    let mut rng =  StdRng::seed_from_u64(seed);
+async fn start_market_making(
+    user: Obv2User,
+    market: Obv2Market,
+    program_id: Pubkey,
+    transaction_send_channel: UnboundedSender<Transaction>,
+    block_hash_rw: Arc<RwLock<Hash>>,
+    quotes_per_second: u64,
+    seed: u64,
+) {
+    let mut rng = StdRng::seed_from_u64(seed);
     let mut client_id = 0;
     loop {
         let instant = Instant::now();
         for _ in 0..quotes_per_second {
-            let offset : i64 = rng.gen::<i64>() % 100;
-            let size : u64 = rng.gen::<u64>() % 1000 + 10;
-            let instructions = create_market_making_instructions(&user, &market, program_id, client_id, offset, size as i64);
+            let offset: i64 = rng.gen::<i64>() % 100;
+            let size: u64 = rng.gen::<u64>() % 1000 + 10;
+            let instructions = create_market_making_instructions(
+                &user,
+                &market,
+                program_id,
+                client_id,
+                offset,
+                size as i64,
+            );
             let recent_blockhash = *block_hash_rw.read().await;
 
             let message = Message::new(&instructions, Some(&user.secret.pubkey()));
@@ -108,8 +157,8 @@ async fn start_market_making(user: Obv2User, market: Obv2Market, program_id: Pub
             let signature = tx.signatures[0];
             match transaction_send_channel.send(tx) {
                 Ok(_) => {
-                    log::trace!("successfully sent {} on channel",  signature);
-                },
+                    log::trace!("successfully sent {} on channel", signature);
+                }
                 Err(e) => {
                     log::error!("sending of channel failed {}", e);
                 }
@@ -125,8 +174,13 @@ async fn start_market_making(user: Obv2User, market: Obv2Market, program_id: Pub
     }
 }
 
-pub fn start_market_makers(args: Args, config: Obv2Config, program_id: Pubkey, transaction_send_channel: UnboundedSender<Transaction>, block_hash_rw: Arc<RwLock<Hash>>,)
-    -> Vec<JoinHandle<()>> {
+pub fn start_market_makers(
+    args: &Args,
+    config: &Obv2Config,
+    program_id: &Pubkey,
+    transaction_send_channel: UnboundedSender<Transaction>,
+    block_hash_rw: Arc<RwLock<Hash>>,
+) -> Vec<JoinHandle<()>> {
     let mut tasks = vec![];
     let mut seed = 0;
     let quotes_per_second = args.quotes_per_seconds;
@@ -136,8 +190,18 @@ pub fn start_market_makers(args: Args, config: Obv2Config, program_id: Pubkey, t
             let market = market.clone();
             let transaction_send_channel = transaction_send_channel.clone();
             let block_hash_rw = block_hash_rw.clone();
+            let program_id = program_id.clone();
             let task = tokio::spawn(async move {
-                start_market_making(user, market, program_id, transaction_send_channel, block_hash_rw, quotes_per_second, seed, ).await;
+                start_market_making(
+                    user,
+                    market,
+                    program_id,
+                    transaction_send_channel,
+                    block_hash_rw,
+                    quotes_per_second,
+                    seed,
+                )
+                .await;
             });
 
             seed += 1;

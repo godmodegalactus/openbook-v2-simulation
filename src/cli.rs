@@ -1,4 +1,3 @@
-
 use clap::Parser;
 
 #[derive(Parser, Debug, Clone)]
@@ -11,7 +10,7 @@ pub struct Args {
     pub ws_url: String,
 
     /// tpu fanout
-    #[arg(short = 'f', long, default_value_t = 16) ]
+    #[arg(short = 'f', long, default_value_t = 16)]
     pub fanout_size: u64,
 
     #[arg(short = 'k', long, default_value_t = String::new())]
