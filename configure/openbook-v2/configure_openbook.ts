@@ -123,8 +123,7 @@ export class OpenbookConfigurator {
         )
         .accounts({
           asks: marketData.asks,
-          baseVault: marketData.base_vault,
-          quoteVault: marketData.quote_vault,
+          marketVault: marketData.quote_vault,
           bids: marketData.bids,
           eventQueue: marketData.event_queue,
           market: marketData.market_pk,
@@ -159,8 +158,7 @@ export class OpenbookConfigurator {
         )
         .accounts({
           asks: marketData.asks,
-          baseVault: marketData.base_vault,
-          quoteVault: marketData.quote_vault,
+          marketVault: marketData.base_vault,
           bids: marketData.bids,
           eventQueue: marketData.event_queue,
           market: marketData.market_pk,

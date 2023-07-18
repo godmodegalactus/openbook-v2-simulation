@@ -39,7 +39,7 @@ fn create_market_making_instructions(
 
     // cancel all previous orders
     let cancel_order_instruction = {
-        let accounts = openbook_v2::accounts::CancelAllOrders {
+        let accounts = openbook_v2::accounts::CancelOrder {
             asks: market.asks,
             bids: market.bids,
             market: market.market_pk,
@@ -65,12 +65,12 @@ fn create_market_making_instructions(
             bids: market.bids,
             event_queue: market.event_queue,
             market: market.market_pk,
-            market_vault: market.base_vault,
+            market_vault: market.quote_vault,
             open_orders_account,
             open_orders_admin: None,
             oracle: market.oracle,
             owner_or_delegate: user.secret.pubkey(),
-            token_deposit_account: market.quote_vault,
+            token_deposit_account: user.token_data[0].token_account,
             system_program: anchor_client::solana_sdk::system_program::id(),
             token_program: anchor_spl::token::ID,
         };
@@ -80,7 +80,7 @@ fn create_market_making_instructions(
             limit: 255,
             client_order_id: client_id,
             max_base_lots: size,
-            expiry_timestamp: 0,
+            expiry_timestamp: u64::MAX,
             max_quote_lots_including_fees: i64::MAX,
             price_lots: market.price as i64 + offset,
             side: openbook_v2::state::Side::Bid,
@@ -100,7 +100,7 @@ fn create_market_making_instructions(
             bids: market.bids,
             event_queue: market.event_queue,
             market: market.market_pk,
-            market_vault: market.quote_vault,
+            market_vault: market.base_vault,
             open_orders_account,
             open_orders_admin: None,
             oracle: market.oracle,
@@ -115,7 +115,7 @@ fn create_market_making_instructions(
             limit: 255,
             client_order_id: client_id,
             max_base_lots: i64::MAX,
-            expiry_timestamp: 0,
+            expiry_timestamp: u64::MAX,
             max_quote_lots_including_fees: size,
             price_lots: market.price as i64 - offset,
             side: openbook_v2::state::Side::Ask,
@@ -142,7 +142,7 @@ async fn start_market_making(
     seed: u64,
 ) {
     let mut rng = StdRng::seed_from_u64(seed);
-    let mut client_id = 0;
+    let mut client_id = 1;
     loop {
         let instant = Instant::now();
         for _ in 0..quotes_per_second {

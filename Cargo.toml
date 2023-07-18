@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-openbook-v2 = {git = "https://github.com/openbook-dex/openbook-v2", features=["enable-gpl"]}
+openbook-v2 = {git = "https://github.com/godmodegalactus/openbook-v2.git", branch = "openbook-simulation", features=["enable-gpl"]}
 anchor-client = "0.27.0"
 anchor-lang = "0.27.0"
 anchor-spl = "0.27.0"
@@ -37,3 +37,5 @@ chrono = "0.4.19"
 futures = "0.3.17"
 dashmap = "5.4.0"
 regex = "1.7.3"
+csv-async = "1.2"
+async-std = "1.12.0"

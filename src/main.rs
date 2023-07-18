@@ -6,6 +6,7 @@ use helpers::{create_transaction_bridge, start_blockhash_polling_service};
 use json_config::Config;
 use market_maker::start_market_makers;
 use openbook_config::Obv2Config;
+use result_writer::initialize_result_writers;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{commitment_config::CommitmentConfig, signature::Keypair};
 use stats::OpenbookV2SimulationStats;
@@ -24,6 +25,7 @@ mod openbook_config;
 mod states;
 mod tpu_manager;
 mod stats;
+mod result_writer;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
@@ -106,6 +108,8 @@ async fn main() -> anyhow::Result<()> {
     // start confirmations by blocks
     let (tx_confirmation_sx, tx_confirmation_rx) = tokio::sync::broadcast::channel(8192);
     let (blocks_confirmation_sx, blocks_confirmation_rx) = tokio::sync::broadcast::channel(8192);
+
+    openbook_simulation_stats.update_from_tx_status_stream(tx_confirmation_sx.subscribe());
     let mut other_services = confirmations_by_blocks(
         rpc_client.clone(),
         tx_send_record_rx,
@@ -113,7 +117,14 @@ async fn main() -> anyhow::Result<()> {
         blocks_confirmation_sx,
         current_slot.load(std::sync::atomic::Ordering::Relaxed),
     );
-    openbook_simulation_stats.update_from_tx_status_stream(tx_confirmation_rx);
+
+    // start writing results
+    initialize_result_writers(
+        args.transaction_save_file.clone(),
+        args.block_data_save_file.clone(),
+        tx_confirmation_rx,
+        blocks_confirmation_rx
+    );
 
     other_services.push(bh_polling_task);
     // start transaction send bridge

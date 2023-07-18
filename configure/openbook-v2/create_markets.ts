@@ -59,7 +59,7 @@ export async function createMarket(
     }).signers([adminKp]).rpc();
 
   await program.methods.stubOracleSet({
-    val: price,
+    val: new BN(price),
   }).accounts(
     {
       admin: adminKp.publicKey,
@@ -89,7 +89,7 @@ export async function createMarket(
   let marketIndex: BN = new BN(index);
 
   let [marketPk, _tmp2] = PublicKey.findProgramAddressSync(
-    [Buffer.from("Market"), marketIndex.toBuffer("le", 4)],
+    [Buffer.from("Market"), adminKp.publicKey.toBuffer(), marketIndex.toBuffer("le", 4)],
     openbookProgramId
   );
 
@@ -118,14 +118,13 @@ export async function createMarket(
       new BN(0),
       new BN(0),
       new BN(0),
-      new BN(0),
     )
     .accounts({
       market: marketPk,
       bids,
       asks,
       eventQueue,
-      payer: anchorProvider.keypair.publicKey,
+      payer: adminKp.publicKey,
       baseVault,
       quoteVault,
       baseMint,
@@ -140,7 +139,7 @@ export async function createMarket(
     .preInstructions([web3.ComputeBudgetProgram.setComputeUnitLimit({
       units: 10_000_000
     })])
-    .signers([])
+    .signers([adminKp])
     .rpc();
 
   return {
