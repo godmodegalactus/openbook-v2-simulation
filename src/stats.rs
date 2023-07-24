@@ -1,15 +1,16 @@
 use std::{
+    collections::HashMap,
     sync::Mutex,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
     },
-    time::Instant, collections::HashMap,
+    time::Instant,
 };
 
 use crate::states::TransactionConfirmRecord;
 use itertools::Itertools;
-use tokio::{task::JoinHandle, sync::RwLock};
+use tokio::{sync::RwLock, task::JoinHandle};
 
 // Non atomic version of counters
 #[derive(Clone, Default, Debug)]
@@ -36,7 +37,7 @@ impl NACounters {
     pub fn diff(&self, other: &NACounters) -> NACounters {
         let mut new_error_count = HashMap::new();
         for (error, count) in &self.errors {
-            if let Some(v) = other.errors.get( error ) {
+            if let Some(v) = other.errors.get(error) {
                 new_error_count.insert(error.clone(), *count - *v);
             } else {
                 new_error_count.insert(error.clone(), *count);
@@ -107,11 +108,7 @@ pub struct OpenbookV2SimulationStats {
 }
 
 impl OpenbookV2SimulationStats {
-    pub fn new(
-        nb_users: usize,
-        quotes_per_second: usize,
-        duration_in_sec: usize,
-    ) -> Self {
+    pub fn new(nb_users: usize, quotes_per_second: usize, duration_in_sec: usize) -> Self {
         Self {
             recv_limit: nb_users * quotes_per_second * duration_in_sec,
             counters: Counters::default(),
@@ -145,11 +142,11 @@ impl OpenbookV2SimulationStats {
                             counters.num_successful.fetch_add(1, Ordering::Relaxed);
 
                             if tx_data.is_consume_event {
-                                counters.succ_consume_events_txs.fetch_add(1, Ordering::Relaxed);
-                            } else {
                                 counters
-                                    .succ_users_txs
+                                    .succ_consume_events_txs
                                     .fetch_add(1, Ordering::Relaxed);
+                            } else {
+                                counters.succ_users_txs.fetch_add(1, Ordering::Relaxed);
                             }
                         }
                     } else {
@@ -166,17 +163,26 @@ impl OpenbookV2SimulationStats {
         self.counters.num_sent.fetch_add(1, Ordering::Relaxed);
 
         if is_consume_event {
-            self.counters.num_consume_events_txs.fetch_add(1, Ordering::Relaxed);
-        } else {
             self.counters
-                .num_users_txs
+                .num_consume_events_txs
                 .fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.counters.num_users_txs.fetch_add(1, Ordering::Relaxed);
         }
     }
 
     pub async fn report(&mut self, is_final: bool, name: &'static str) {
         let time_diff = std::time::Instant::now() - self.instant;
-        let counters = self.counters.to_na_counters().await;
+        let mut counters = self.counters.to_na_counters().await;
+
+        println!("\n\n{} at {} secs", name, time_diff.as_secs());
+        if !is_final {
+            println!("Recently sent transactions could not yet be confirmed and would be confirmed shortly.\n
+            diff is wrt previous report");
+        } else {
+            counters.num_timeout_txs = counters.num_sent - counters.num_confirmed_txs;
+        }
+
         let diff = {
             let mut prev_counter_lock = self.previous_counters.lock().unwrap();
             let diff = counters.diff(&prev_counter_lock);
@@ -184,11 +190,6 @@ impl OpenbookV2SimulationStats {
             diff
         };
 
-        println!("\n\n{} at {} secs", name, time_diff.as_secs());
-        if !is_final {
-            println!("Recently sent transactions could not yet be confirmed and would be confirmed shortly.\n
-            diff is wrt previous report");
-        }
         println!(
             "Number of expected marker making transactions : {}",
             self.recv_limit
@@ -232,7 +233,13 @@ impl OpenbookV2SimulationStats {
                 .checked_div(counters.num_sent)
                 .unwrap_or(0)
         );
-        let top_5_errors = counters.errors.iter().sorted_by(|x,y| {(*y.1).cmp(x.1)}).take(5).enumerate().collect_vec();
+        let top_5_errors = counters
+            .errors
+            .iter()
+            .sorted_by(|x, y| (*y.1).cmp(x.1))
+            .take(5)
+            .enumerate()
+            .collect_vec();
         let mut errors_to_print: String = String::new();
         for (idx, (error, count)) in top_5_errors {
             println!("Error #{idx} : {error} ({count})");

@@ -1,8 +1,3 @@
-use std::{
-    sync::{atomic::AtomicU64, Arc},
-    time::Duration,
-};
-
 use crate::{
     cli::Args,
     openbook_config::{Obv2Config, Obv2Market, Obv2User},
@@ -15,6 +10,10 @@ use solana_sdk::hash::Hash;
 use solana_sdk::{
     instruction::Instruction, message::Message, pubkey::Pubkey, signer::Signer,
     transaction::Transaction,
+};
+use std::{
+    sync::{atomic::AtomicU64, Arc},
+    time::Duration,
 };
 use tokio::{
     sync::{mpsc::UnboundedSender, RwLock},

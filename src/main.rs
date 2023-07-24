@@ -18,14 +18,16 @@ use tokio::sync::{mpsc::unbounded_channel, RwLock};
 
 mod cli;
 mod confirmation_strategy;
+mod crank;
 mod helpers;
 mod json_config;
 mod market_maker;
 mod openbook_config;
-mod states;
-mod tpu_manager;
-mod stats;
+mod openbook_v2_sink;
 mod result_writer;
+mod states;
+mod stats;
+mod tpu_manager;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> anyhow::Result<()> {
@@ -56,6 +58,17 @@ async fn main() -> anyhow::Result<()> {
         Keypair::new()
     };
 
+    let keeper_authority = if !args.keeper_authority.is_empty() {
+        let identity_file = tokio::fs::read_to_string(args.keeper_authority.as_str())
+            .await
+            .expect("Cannot find the keeper identity file provided");
+        let identity_bytes: Vec<u8> =
+            serde_json::from_str(&identity_file).expect("Keypair file invalid");
+        Keypair::from_bytes(identity_bytes.as_slice()).expect("Keypair file invalid")
+    } else {
+        panic!("Keeper authority is needed");
+    };
+
     let obv2_config = Obv2Config::try_from(&config).expect("should be convertible to obv2 config");
     let program_id = obv2_config
         .programs
@@ -70,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
         CommitmentConfig::finalized(),
     ));
 
-    let openbook_simulation_stats = OpenbookV2SimulationStats::new(
+    let mut openbook_simulation_stats = OpenbookV2SimulationStats::new(
         config.users.len(),
         args.quotes_per_seconds as usize,
         args.duration_in_seconds as usize,
@@ -105,25 +118,41 @@ async fn main() -> anyhow::Result<()> {
     );
     tpu_manager.force_reset_after_every(Duration::from_secs(600)); // reset every 10 minutes
 
+    // start event queue crank
+    let mut other_services = crank::start(
+        crank::KeeperConfig {
+            program_id: program_id,
+            rpc_url: args.rpc_url.to_string(),
+            websocket_url: args.ws_url.to_string(),
+        },
+        blockhash_rw.clone(),
+        current_slot.clone(),
+        &obv2_config,
+        &keeper_authority,
+        1000,
+        tx_sx.clone(),
+    );
+
     // start confirmations by blocks
     let (tx_confirmation_sx, tx_confirmation_rx) = tokio::sync::broadcast::channel(8192);
     let (blocks_confirmation_sx, blocks_confirmation_rx) = tokio::sync::broadcast::channel(8192);
 
     openbook_simulation_stats.update_from_tx_status_stream(tx_confirmation_sx.subscribe());
-    let mut other_services = confirmations_by_blocks(
+    let mut confirmation_services = confirmations_by_blocks(
         rpc_client.clone(),
         tx_send_record_rx,
         tx_confirmation_sx,
         blocks_confirmation_sx,
         current_slot.load(std::sync::atomic::Ordering::Relaxed),
     );
+    other_services.append(&mut confirmation_services);
 
     // start writing results
     initialize_result_writers(
         args.transaction_save_file.clone(),
         args.block_data_save_file.clone(),
         tx_confirmation_rx,
-        blocks_confirmation_rx
+        blocks_confirmation_rx,
     );
 
     other_services.push(bh_polling_task);
@@ -143,11 +172,13 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // task which updates stats
-    let mut openbook_simulation_stats = openbook_simulation_stats.clone();
+    let mut stats = openbook_simulation_stats.clone();
     let reporting_thread = tokio::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(60)).await;
-            openbook_simulation_stats.report(false, "openbook v2 simulation").await;
+            stats
+                .report(false, "openbook v2 simulation")
+                .await;
         }
     });
     other_services.push(reporting_thread);
@@ -165,6 +196,12 @@ async fn main() -> anyhow::Result<()> {
             log::error!("user unexpectedly exited sending transactions");
         }
     }
-    let _ = futures::future::select_all(other_services).await;
+    // wait for 2 minutes fo all the transactions to get confirmed
+    let _ = tokio::time::timeout(
+        Duration::from_secs(120),
+        futures::future::select_all(other_services)
+    ).await;
+
+    openbook_simulation_stats.report(true, "Openbook Simulation End").await;
     Ok(())
 }

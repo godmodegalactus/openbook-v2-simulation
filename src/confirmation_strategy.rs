@@ -197,7 +197,7 @@ pub fn confirmations_by_blocks(
         let tx_confirm_records = tx_confirm_records.clone();
         tokio::spawn(async move {
             loop {
-                tokio::time::sleep(Duration::from_secs(60)).await;
+                tokio::time::sleep(Duration::from_secs(10)).await;
                 {
                     let mut to_remove = vec![];
 
