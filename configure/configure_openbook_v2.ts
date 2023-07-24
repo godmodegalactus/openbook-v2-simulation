@@ -8,6 +8,7 @@ import {
     Commitment,
     Connection,
     LAMPORTS_PER_SOL,
+    PublicKey,
 } from "@solana/web3.js";
 import { getKeypairFromFile } from "./common_utils";
 import { User, createUser, mintUser } from "./general/create_users";
@@ -19,12 +20,6 @@ import { OpenbookConfigurator } from "./openbook-v2/configure_openbook";
 function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
 }
-
-const numberOfAccountsToBeCreated = option({
-    type: number,
-    defaultValue: () => 100,
-    long: "number-of-accounts",
-});
 
 const endpoint = option({
     type: string,
@@ -92,7 +87,6 @@ const app = command({
     name: "configure",
     args: {
         endpoint,
-        numberOfAccountsToBeCreated,
         authority,
         nbPayers,
         balancePerPayer,
@@ -103,7 +97,6 @@ const app = command({
     },
     handler: ({
         endpoint,
-        numberOfAccountsToBeCreated,
         authority,
         nbPayers,
         balancePerPayer,
@@ -115,7 +108,6 @@ const app = command({
         console.log("configuring a new test instance");
         configure(
             endpoint,
-            numberOfAccountsToBeCreated,
             authority,
             nbPayers,
             balancePerPayer,
@@ -134,7 +126,6 @@ run(app, process.argv.slice(2));
 // configure part
 async function configure(
     endpoint: String,
-    numberOfAccountsToBeCreated: number,
     authorityFile: String,
     nbPayers: number,
     balancePerPayer: number,
@@ -254,14 +245,7 @@ async function configure(
 
     }
 
-    console.log("Creating accounts");
-    let accounts = await configure_accounts(
-        connection,
-        authority,
-        numberOfAccountsToBeCreated,
-        programIds
-    );
-
+    let accounts : PublicKey[] = [];
     // adding known accounts
     const marketAccountsList = markets
         .map((market) => [
